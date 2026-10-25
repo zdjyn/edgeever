@@ -55,7 +55,6 @@ PREBUILD_FINGERPRINT="$({
     apps/mobile/app.json \
     apps/mobile/assets/adaptive-icon-transparent.svg \
     apps/web/public/pwa-512x512.png \
-    patches/expo-sharing@57.0.22.patch \
     bun.lock
 } | shasum | awk '{print $1}')"
 PREBUILD_STAMP="$ANDROID_DIR/.edgeever-prebuild-fingerprint"
