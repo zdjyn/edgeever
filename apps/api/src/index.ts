@@ -94,6 +94,7 @@ import { registerPluginDistributionRoutes } from "./plugin-distribution-routes";
 import { registerPosterRenderRoutes } from "./poster-render-routes";
 import { registerSyncRoutes } from "./sync-routes";
 import { registerMemoRoutes } from "./memo-routes";
+import { registerMediaopsRoutes } from "./mediaops-routes";
 import { registerScheduledTaskRoutes } from "./scheduled-task-routes";
 import { registerWorkspaceExtensionRoutes } from "./workspace-extension-routes";
 import { registerBackupRoutes } from "./backup-routes";
@@ -327,6 +328,7 @@ app.use("/api/v1/*", async (c, next) => {
 });
 
 registerImportContextGuard(app);
+registerMediaopsRoutes(app);
 
 registerObjectStorageRoutes(app, {
   isDemoMode: (...args) => isDemoMode(...args),

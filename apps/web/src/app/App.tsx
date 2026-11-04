@@ -26,6 +26,7 @@ const EvernoteImportGuidePane = lazy(() =>
 );
 const LoginScreen = lazy(() => import("@/components/LoginScreen").then((module) => ({ default: module.LoginScreen })));
 const WorkspaceApp = lazy(() => import("@/components/WorkspaceApp").then((module) => ({ default: module.WorkspaceApp })));
+const MediaopsPage = lazy(() => import("@/components/mediaops/MediaopsPage").then((module) => ({ default: module.MediaopsPage })));
 const PublicNotebookSharePage = lazy(() => import("@/components/PublicNotebookSharePage").then(module => ({ default: module.PublicNotebookSharePage })));
 const PublicSharePage = lazy(() => import("@/components/PublicSharePage").then((module) => ({ default: module.PublicSharePage })));
 const PublicTableFormPage = lazy(() => import("@/components/PublicTableFormPage").then((module) => ({ default: module.PublicTableFormPage })));
@@ -60,7 +61,7 @@ const EvernoteMigrationRoute = () => {
   );
 };
 
-const AuthenticatedWorkspace = ({ siteManagement = false }: { siteManagement?: boolean }) => {
+const AuthenticatedWorkspace = ({ siteManagement = false, mediaops = false }: { siteManagement?: boolean; mediaops?: boolean }) => {
   const queryClient = useQueryClient();
   const { t, i18n } = useTranslation();
   const desktopBridge = window.edgeeverDesktop;
@@ -207,7 +208,7 @@ const AuthenticatedWorkspace = ({ siteManagement = false }: { siteManagement?: b
 
   return (
     <Suspense fallback={<AuthLoadingScreen />}>
-      {siteManagement ? <NotebookSiteManagementPage /> : <WorkspaceApp
+      {mediaops ? <MediaopsPage userId={session.user?.id ?? ""} manager={session.user?.role === "owner"} /> : siteManagement ? <NotebookSiteManagementPage /> : <WorkspaceApp
         authRequired={session.authRequired}
         demoMode={session.demoMode}
         isLoggingOut={logoutMutation.isPending}
@@ -247,6 +248,7 @@ export const App = () => {
           <Route path="/form/:token" element={<Suspense fallback={<AuthLoadingScreen />}><PublicTableFormPage /></Suspense>} />
           <Route path={EVERNOTE_MIGRATION_PATH} element={<EvernoteMigrationRoute />} />
           <Route path="/" element={<AuthenticatedWorkspace />} />
+          <Route path="/mediaops" element={<AuthenticatedWorkspace mediaops />} />
           <Route path="/settings" element={<AuthenticatedWorkspace />} />
           <Route path="/notebooks/:notebookId/site" element={<AuthenticatedWorkspace siteManagement />} />
           <Route path="/plugins" element={<AuthenticatedWorkspace />} />
