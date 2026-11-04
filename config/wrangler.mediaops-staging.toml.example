@@ -1,0 +1,34 @@
+# M0 staging template. Copy locally, fill a NEW staging D1 UUID, then run the verifier.
+# Never use default deploy scripts: package.json deploy:ci runs remote migrations.
+name = "edgeever-mediaops-staging"
+main = ".wrangler/edgeever-worker/index.js"
+compatibility_date = "2026-06-26"
+workers_dev = true
+no_bundle = true
+find_additional_modules = true
+base_dir = ".wrangler/edgeever-worker"
+[[rules]]
+type = "ESModule"
+globs = ["modules/*.js"]
+fallthrough = true
+[build]
+command = "bun scripts/build-cloudflare-worker.mjs"
+watch_dir = ["apps/api/src", "packages/shared/src"]
+[assets]
+directory = "apps/web/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*", "/mcp", "/__scheduled", "/s/*", "/share/*"]
+[[d1_databases]]
+binding = "DB"
+database_name = "edgeever-mediaops-staging"
+database_id = "REPLACE_WITH_NEW_STAGING_D1_UUID"
+migrations_dir = "migrations"
+[[r2_buckets]]
+binding = "RESOURCES"
+bucket_name = "edgeever-mediaops-staging-resources"
+preview_bucket_name = "edgeever-mediaops-staging-resources-preview"
+[observability]
+enabled = true
+[version_metadata]
+binding = "CF_VERSION_METADATA"
