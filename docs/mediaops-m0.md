@@ -19,13 +19,14 @@ The tracked config is a template, not an observed deployment. Before any Cloudfl
 Enable separate contractor accounts to hand off articles by task without real-time editing. The highest risks are cross-workspace disclosure, stale writes, and the fork updater replacing custom code or migrating production. Rollback before rollout is to discard this feature branch. After a future rollout, revoke MediaOps assignments and disable its routes; data rollback requires a tested backup/restore plan. Existing client platforms and old-to-new database upgrade remain unverified.
 
 ## Decision: controlled MediaOps API
-Keep each account's existing personal workspace and its one-membership invariant. Create one non-personal MediaOps workspace owned by the operator, but do not add contractors to workspace_members or switch their AuthContext.workspaceId. Add task-scoped MediaOps routes and one central authorizeTask(actor, task, memo, action) function. All MediaOps rows must be inaccessible through the normal workspace-scoped routes. A privileged operator service creates articles directly inside the MediaOps workspace. Explicit copy-in must copy permitted attachments and reject private internal links. This has less impact than general multi-workspace support, which would alter authentication, sync, search, offline mirrors, all clients, MCP, and exports.
+Keep each account's existing personal workspace and its one-membership invariant. Create one non-personal MediaOps workspace on first task creation, but do not add contractors to workspace_members or switch their AuthContext.workspaceId. Task-scoped routes and the MediaOps service enforce access; normal workspace routes cannot reach these rows. M0 creates new articles directly in MediaOps. Copy-in from a private workspace is not implemented and requires a separate attachment and internal-link security design. This is narrower than general multi-workspace support, which would alter authentication, sync, search, offline mirrors, all clients, MCP, and exports.
 
 ## Minimal model
-- mediaops_tasks: id, workspace_id, title, state, current_memo_id, version, created_by, submitted_by, submitted_at, reviewed_by, reviewed_at, created_at, updated_at. workspace_id must identify the one non-personal MediaOps workspace.
-- mediaops_task_assignments: task_id, user_id, role (editor, reviewer), revoked_at, created_at. The instance owner is manager through server-side user identity, not a client claim.
-- mediaops_task_memos: task_id, memo_id, created_at. A memo belongs to one task; require matching workspace_id for both.
-- mediaops_events: append-only actor, action, task, memo, old/new state, old/new revision, timestamp. Do not store article body or credentials here.
+- mediaops_tasks: one memo per task, state, version, one holder_user_id and holder_epoch, submitted revision/hash and reviewer.
+- mediaops_assignments: task_id, user_id, role, revoked_at. Manager derives from the authenticated owner role; AI role is reserved but inactive.
+- mediaops_approvals: immutable copy of approved title, document JSON/Markdown, exact revision/hash, approver and time. A later revision requires a new approval record.
+- mediaops_events: append-only task action, actor, memo revision and time. No article body or credentials.
+- mediaops_cas_assertions: transient SQL assertion rows inserted and removed inside each batch; a failed CHECK rolls back the batch.
 - Reuse memos, memo_contents, memo_revisions, memo_edit_sessions, resources and users. Do not duplicate content.
 
 Roles: manager assigns/revokes, reviews, and alone gives final approval; an assigned editor holding the active turn edits and submits; an assigned reviewer marks submitted work reviewed or requests changes. API/MCP agents are denied in M0. Disabled users and revoked assignments fail every request. Private/SmartGym access remains tied to the original personal workspace.
@@ -35,14 +36,14 @@ State machine: draft -> in_progress -> submitted -> reviewed -> approved; submit
 ## Permission matrix
 | Action | Manager | Assigned editor | Assigned reviewer | Other account |
 |---|---|---|---|---|
-| Task list/detail, article, revisions, permitted attachments | Yes | Own task | Own task | No |
-| Create/assign/revoke/cancel | Yes | No | No | No |
+| Task list/detail and article | Yes | Own task | Own task | No |
+| Create/assign/revoke | Yes | No | No | No |
 | Edit article in editable states | Only if assigned editor and holder | Yes, when holder | No | No |
 | Submit | Only if assigned editor and holder | Yes, when holder | No | No |
 | Mark reviewed/request changes | Yes | No | Yes | No |
 | Final approval of reviewed submission | Yes | No | No | No |
 | Restore revision | Yes with expected current revision | No | No | No |
-| Delete/share/export/MCP/normal sync | Separate explicit manager policy; disabled in M0 | No | No | No |
+| Delete/share/export/MCP/normal sync/attachments | No dedicated M0 endpoint | No | No | No |
 
 Authorization belongs at every service entry, including direct resource fetch. Return 404 for unassigned task/memo IDs to avoid enumeration. Check account disabled and revoked_at on every request. Never trust a supplied workspace_id, role, task state, or memo_id without joining server records.
 
