@@ -28,7 +28,8 @@ concurrency:
 
 jobs:
   update:
-    # XD MediaOps fork uses reviewed upstream PRs; never auto-push main or deploy.\n    if: github.repository != 'tianma-if/edgeever' && github.repository != 'zdjyn/edgeever'
+    # XD MediaOps fork uses reviewed upstream PRs; never auto-push main or deploy.
+    if: github.repository != 'tianma-if/edgeever' && github.repository != 'zdjyn/edgeever'
     name: Sync Fork and trigger deployment
     runs-on: ubuntu-latest
     timeout-minutes: 20
